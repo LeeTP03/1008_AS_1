@@ -1,7 +1,8 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from layer_util import Layer
-from layers import invert, rainbow, black, lighten
+from layers import invert, rainbow, black, lighten, green, red, blue
+from layer_util import background
 import colorsys
 
 class LayerStore(ABC):
@@ -51,36 +52,18 @@ class SetLayerStore(LayerStore):
         self.store = None
         self.spec = False
     
-    def checkSpec(self,x):
-        if self.spec == True:
-            return(255-x[0],255-x[1],255-x[2])
-        else:
-            return x
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
-        self.color = start
-        
         if self.store == None:
-            color = self.checkSpec(self.color)
-            return color
-                    
-        elif self.store == black:
-            initial = (0,0,0)
+            if self.spec == True:
+                return(0,0,0)
+            else:
+                return (255,255,255)
+        if self.spec == False:
+            return self.store.apply(start,timestamp,x,y)
+        elif self.spec == True:
+            return invert.apply(self.store.apply(start,timestamp,x,y),0,0,0)
         
-        elif self.store == invert:
-            initial = tuple(255 - c for c in self.color)
-        
-        elif self.store == lighten:
-            initial = tuple(min(255, x + 40) for x in self.color)
-        
-        elif self.store == rainbow:
-            initial = tuple(
-            int(255*x)
-            for x in colorsys.hls_to_rgb((timestamp/20 + x/20 + y/20)%1, 0.6, 0.6)
-        )
-        
-        color = self.checkSpec(initial)
-        return color
     
     def add(self, Layer):
         if self.store == Layer:
@@ -93,18 +76,13 @@ class SetLayerStore(LayerStore):
         return True
     
     def special(self):
-        # print("special tapped")
+        
         if self.spec == False:
             self.spec = True
-            
-        elif self.spec == True:
+        else:
             self.spec = False
-        # x = []
-        # for i in self.color:
-        #     x.append(255-i)
-        # self.color = tuple(x)
-        # return tuple(x)
-            
+        
+        
 
     
 
@@ -115,8 +93,31 @@ class AdditiveLayerStore(LayerStore):
     - erase: Remove the first layer that was added. Ignore what is currently selected.
     - special: Reverse the order of current layers (first becomes last, etc.)
     """
-
-    pass
+    def __init__(self) -> None:
+        self.color = None
+        self.store = []
+        self.spec = False
+    
+    def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
+        if len(self.store) == 0:
+            return start
+        
+        for i in range(len(self.store)):
+            start = self.store[i].apply(start,timestamp,x,y)
+        return start
+        
+    def add(self, layer):
+        self.store.append(layer)
+    
+    def erase(self,layer):
+        self.store.pop(0)
+    
+    def special(self):
+        x = []
+        for i in range(len(self.store)-1,-1,-1):
+            x.append(self.store[i])
+        self.store = x
+        
 
 class SequenceLayerStore(LayerStore):
     """

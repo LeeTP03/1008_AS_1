@@ -326,7 +326,7 @@ class MyWindow(arcade.Window):
                     continue
                 self.grid[px+i][py+j].add(layer)
         
-        print(self.grid[px][py].store)
+        print(self.grid[px][py].color)
           
 
     def on_undo(self):
@@ -339,7 +339,7 @@ class MyWindow(arcade.Window):
 
     def on_special(self):
         """Called when the special action is requested."""
-        pass
+        self.grid.special()
 
     def on_replay_start(self):
         """Called when the replay starting is requested."""
