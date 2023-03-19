@@ -325,8 +325,6 @@ class MyWindow(arcade.Window):
                 if px+i > self.grid.x or py+j > self.grid.y or py+j < 0:
                     continue
                 self.grid[px+i][py+j].add(layer)
-        
-        print(self.grid[px][py].color)
           
 
     def on_undo(self):

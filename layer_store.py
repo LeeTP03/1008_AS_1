@@ -1,7 +1,12 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from layer_util import Layer
-from layers import invert, rainbow, black, lighten, green, red, blue
+from data_structures.queue_adt import CircularQueue
+from data_structures.stack_adt import ArrayStack
+from data_structures.bset import BSet
+from data_structures.array_sorted_list import ArraySortedList
+from data_structures.sorted_list_adt import *
+from layers import invert, rainbow, black, lighten, green, red, blue, sparkle, darken
 from layer_util import background
 import colorsys
 
@@ -95,28 +100,46 @@ class AdditiveLayerStore(LayerStore):
     """
     def __init__(self) -> None:
         self.color = None
-        self.store = []
+        self.store = CircularQueue(100)
         self.spec = False
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
         if len(self.store) == 0:
             return start
         
+        color = start
+        temp = CircularQueue(100)
+        
         for i in range(len(self.store)):
-            start = self.store[i].apply(start,timestamp,x,y)
-        return start
+            next_layer = self.store.serve()
+            temp.append(next_layer)
+            color = next_layer.apply(color,timestamp,x,y)
+        self.store = temp
+        return color
         
     def add(self, layer):
         self.store.append(layer)
     
     def erase(self,layer):
-        self.store.pop(0)
+        self.store.serve()
+        
     
     def special(self):
-        x = []
-        for i in range(len(self.store)-1,-1,-1):
-            x.append(self.store[i])
-        self.store = x
+        s1 = ArrayStack(len(self.store))
+        
+        for i in range(len(self.store)):
+            l1 = self.store.serve()
+            s1.push(l1)
+        
+        q1 = CircularQueue(len(s1))
+        
+        for i in range(len(s1)):
+            l2 = s1.pop()
+            q1.append(l2)
+            
+        self.store = q1
+        
+            
         
 
 class SequenceLayerStore(LayerStore):
@@ -128,14 +151,61 @@ class SequenceLayerStore(LayerStore):
         Of all currently applied layers, remove the one with median `name`.
         In the event of two layers being the median names, pick the lexicographically smaller one.
     """
+    def __init__(self) -> None:
+        self.store = BSet()
+        self.layers = [rainbow, black, lighten, invert, red, green , blue , sparkle, darken]
+        self.spec = False
+    
+    def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
+        color = start
+        for i in range(1,9):
+            if i in self.store:
+                color = self.layers[i-1].apply(color, timestamp, x, y)      
+                    
+        return color
+    
+    def add(self, layer):
+        layer_index = layer.index
+        self.store.add(layer_index+1)
+        
+    def erase(self,layer):
+        layer_index = layer.index
+        self.store.remove(layer_index+1)
+    
+    def special(self):
+        
+        if self.store.is_empty():
+            return False
+        
+        lst = ArraySortedList(9)
+        for i in range(1,9):
+            if i in self.store:
+                a = ListItem(self.layers[i-1],self.layers[i-1].name)
+                lst.add(a)
+        
+        middle = len(lst)//2
+        if len(lst) % 2 == 0:
+            middle = (len(lst)//2) -1
+        deleted_item = lst.delete_at_index(middle).value
 
-    pass
-
+        self.erase(deleted_item)     
+                
 
 if __name__ == "__main__":
-    s = SetLayerStore()
-    # s.color = (100,100,100)
+    
+    s = SequenceLayerStore()
+    s.add(invert)
     s.add(lighten)
     s.add(rainbow)
-    s.special()
-    print(s.store)
+    s.add(black)
+    print(s.get_color((100, 100, 100), 0, 0, 0)) #(215, 215, 215)
+    s.special() # Ordering: Black, Invert, Lighten, Rainbow.
+                # Remove: Invert
+    print(s.get_color((100, 100, 100), 7, 0, 0)) #(40, 40, 40)
+    s.special() # Ordering: Black, Lighten, Rainbow.
+                # Remove: Lighten
+    print(s.get_color((100, 100, 100), 7, 0, 0)) #(0, 0, 0)
+    s.special() # Ordering: Black, Rainbow.
+                # Remove: Black
+    print(s.get_color((100, 100, 100), 7, 0, 0)) #(91, 214, 104)
+    
