@@ -16,8 +16,8 @@ class MyWindow(arcade.Window):
 
     REPLAY_TIMER_DELTA = 0.05
 
-    GRID_SIZE_X = 32
-    GRID_SIZE_Y = 32
+    GRID_SIZE_X = 5
+    GRID_SIZE_Y = 5
 
     BG = [255, 255, 255]
 
@@ -309,22 +309,24 @@ class MyWindow(arcade.Window):
         for i in range(size, 0, -1):
             test+=1
             for j in range(1-test, test):
-                if px-i < 0 or py+j > self.grid.y or py+j < 0:
+                if px-i < 0 or py+j >= self.grid.y or py+j < 0:
                     continue
                 self.grid[px-i][py+j].add(layer)
         
         test += 1    
         for i in range(1-test,test):
-            if py+i > self.grid.y or py+i < 0:
+            if py+i >= self.grid.y or py+i < 0: 
                 continue
             self.grid[px][py+i].add(layer)
+            
             
         for i in range(1,size+1):
             test-=1
             for j in range(1-test, test):
-                if px+i > self.grid.x or py+j > self.grid.y or py+j < 0:
+                if px+i >= self.grid.x or py+j >= self.grid.y or py+j < 0:
                     continue
                 self.grid[px+i][py+j].add(layer)
+                
           
 
     def on_undo(self):
