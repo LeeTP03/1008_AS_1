@@ -4,6 +4,8 @@ import math
 from grid import Grid
 from layer_util import get_layers, Layer
 from layers import lighten
+from action import *
+from undo import UndoTracker
 
 class MyWindow(arcade.Window):
     """ Painter Window """
@@ -16,8 +18,8 @@ class MyWindow(arcade.Window):
 
     REPLAY_TIMER_DELTA = 0.05
 
-    GRID_SIZE_X = 5
-    GRID_SIZE_Y = 5
+    GRID_SIZE_X = 32
+    GRID_SIZE_Y = 32
 
     BG = [255, 255, 255]
 
@@ -287,11 +289,13 @@ class MyWindow(arcade.Window):
 
     def on_init(self):
         """Initialisation that occurs after the system initialisation."""
-        pass
+        self.action = UndoTracker()
+        self.xtet = "1234"
 
     def on_reset(self):
         """Called when a window reset is requested."""
-        pass
+        self.action = UndoTracker()
+        print(self.xtet)
 
     def on_paint(self, layer: Layer, px, py):
         """
@@ -302,6 +306,9 @@ class MyWindow(arcade.Window):
         px: x position of the brush.
         py: y position of the brush.
         """
+        
+        paint = PaintAction()
+        
         size = self.grid.brush_size
                  
         test = 0
@@ -312,12 +319,18 @@ class MyWindow(arcade.Window):
                 if px-i < 0 or py+j >= self.grid.y or py+j < 0:
                     continue
                 self.grid[px-i][py+j].add(layer)
+                if self.grid[px-i][py+j].color != layer:
+                    paint.add_step(PaintStep((px-i,py+j), layer))
+                
+                
         
         test += 1    
         for i in range(1-test,test):
             if py+i >= self.grid.y or py+i < 0: 
                 continue
             self.grid[px][py+i].add(layer)
+            if self.grid[px][py+i].color != layer:
+                paint.add_step(PaintStep((px,py+i), layer))
             
             
         for i in range(1,size+1):
@@ -326,20 +339,25 @@ class MyWindow(arcade.Window):
                 if px+i >= self.grid.x or py+j >= self.grid.y or py+j < 0:
                     continue
                 self.grid[px+i][py+j].add(layer)
-                
-          
-
+                if self.grid[px+i][py+j].color != layer:
+                    paint.add_step(PaintStep((px+i,py+j), layer))
+        
+        self.action.add_action(paint)
+        
+        
     def on_undo(self):
         """Called when an undo is requested."""
-        pass
+        self.action.undo(self.grid)
+        
 
     def on_redo(self):
         """Called when a redo is requested."""
-        pass
+        self.action.redo(self.grid)
 
     def on_special(self):
         """Called when the special action is requested."""
         self.grid.special()
+        self.action.add_action(PaintAction(is_special=True))
 
     def on_replay_start(self):
         """Called when the replay starting is requested."""

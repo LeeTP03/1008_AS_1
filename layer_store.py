@@ -59,6 +59,7 @@ class SetLayerStore(LayerStore):
     
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
+        self.color = self.store
         if self.store == None:
             if self.spec == True:
                 return(0,0,0)
@@ -114,6 +115,7 @@ class AdditiveLayerStore(LayerStore):
             next_layer = self.store.serve()
             temp.append(next_layer)
             color = next_layer.apply(color,timestamp,x,y)
+            self.color = next_layer
         self.store = temp
         return color
         
@@ -155,12 +157,14 @@ class SequenceLayerStore(LayerStore):
         self.store = BSet()
         self.layers = [rainbow, black, lighten, invert, red, green , blue , sparkle, darken]
         self.spec = False
+        self.color = None
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
         color = start
         for i in range(1,9):
             if i in self.store:
-                color = self.layers[i-1].apply(color, timestamp, x, y)      
+                color = self.layers[i-1].apply(color, timestamp, x, y)
+                self.color = self.layers[i-1]      
                     
         return color
     

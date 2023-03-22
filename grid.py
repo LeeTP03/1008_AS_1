@@ -2,6 +2,8 @@ from __future__ import annotations
 from layer_store import LayerStore, SetLayerStore, AdditiveLayerStore, SequenceLayerStore
 from data_structures.abstract_list import List
 from data_structures.referential_array import ArrayR
+from data_structures.stack_adt import ArrayStack
+# from undo import UndoTracker
 class Grid:
     DRAW_STYLE_SET = "SET"
     DRAW_STYLE_ADD = "ADD"
@@ -31,6 +33,8 @@ class Grid:
         self.brush_size = self.DEFAULT_BRUSH_SIZE
         self.x = x
         self.y = y
+        # self.paint = ArrayStack(10000)
+        # self.redo = ArrayStack(10000)
         self.grid = ArrayR(x)
         for i in range(x):
             sub = ArrayR(y)
