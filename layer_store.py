@@ -62,9 +62,10 @@ class SetLayerStore(LayerStore):
         self.color = self.store
         if self.store == None:
             if self.spec == True:
-                return(0,0,0)
+                return invert.apply(start,timestamp,x,y)
             else:
-                return (255,255,255)
+                return start
+            
         if self.spec == False:
             return self.store.apply(start,timestamp,x,y)
         elif self.spec == True:
@@ -121,9 +122,13 @@ class AdditiveLayerStore(LayerStore):
         
     def add(self, layer):
         self.store.append(layer)
+        return True
     
     def erase(self,layer):
+        if self.store.is_empty() == True:
+            return False
         self.store.serve()
+        return True
         
     
     def special(self):
@@ -171,10 +176,15 @@ class SequenceLayerStore(LayerStore):
     def add(self, layer):
         layer_index = layer.index
         self.store.add(layer_index+1)
+        return True
+        
         
     def erase(self,layer):
         layer_index = layer.index
+        if (layer_index+1) not in self.store:
+            return False
         self.store.remove(layer_index+1)
+        return True
     
     def special(self):
         

@@ -59,7 +59,6 @@ class Grid:
         if self.brush_size >= self.MAX_BRUSH:
             return False
         self.brush_size += 1
-        print(f"bruh size is now {self.brush_size}")
         
 
     def decrease_brush_size(self):
@@ -71,7 +70,6 @@ class Grid:
         if self.brush_size <= self.MIN_BRUSH:
             return False
         self.brush_size -= 1
-        print(f"bruh size is now {self.brush_size}")
 
     def special(self):
         """

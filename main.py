@@ -6,6 +6,8 @@ from layer_util import get_layers, Layer
 from layers import lighten
 from action import *
 from undo import UndoTracker
+from replay import ReplayTracker
+import time
 
 class MyWindow(arcade.Window):
     """ Painter Window """
@@ -290,12 +292,11 @@ class MyWindow(arcade.Window):
     def on_init(self):
         """Initialisation that occurs after the system initialisation."""
         self.action = UndoTracker()
-        self.xtet = "1234"
+        self.replay = ReplayTracker()
 
     def on_reset(self):
         """Called when a window reset is requested."""
         self.action = UndoTracker()
-        print(self.xtet)
 
     def on_paint(self, layer: Layer, px, py):
         """
@@ -308,6 +309,7 @@ class MyWindow(arcade.Window):
         """
         
         paint = PaintAction()
+        replay_paint = PaintAction()
         
         size = self.grid.brush_size
                  
@@ -318,19 +320,20 @@ class MyWindow(arcade.Window):
             for j in range(1-test, test):
                 if px-i < 0 or py+j >= self.grid.y or py+j < 0:
                     continue
-                self.grid[px-i][py+j].add(layer)
-                if self.grid[px-i][py+j].color != layer:
-                    paint.add_step(PaintStep((px-i,py+j), layer))
+                layer_change1 = self.grid[px-i][py+j].add(layer)
+                if layer_change1 == True:
+                    replay_paint.add_step(PaintStep((px-i,py+j), layer))
+                paint.add_step(PaintStep((px-i,py+j), layer))
                 
-                
-        
+
         test += 1    
         for i in range(1-test,test):
             if py+i >= self.grid.y or py+i < 0: 
                 continue
-            self.grid[px][py+i].add(layer)
-            if self.grid[px][py+i].color != layer:
-                paint.add_step(PaintStep((px,py+i), layer))
+            layer_change2 = self.grid[px][py+i].add(layer)
+            if layer_change2 == True:
+                replay_paint.add_step(PaintStep((px,py+i), layer))
+            paint.add_step(PaintStep((px,py+i), layer))
             
             
         for i in range(1,size+1):
@@ -338,37 +341,47 @@ class MyWindow(arcade.Window):
             for j in range(1-test, test):
                 if px+i >= self.grid.x or py+j >= self.grid.y or py+j < 0:
                     continue
-                self.grid[px+i][py+j].add(layer)
-                if self.grid[px+i][py+j].color != layer:
-                    paint.add_step(PaintStep((px+i,py+j), layer))
+                layer_change3 = self.grid[px+i][py+j].add(layer)
+                if layer_change3 == True:
+                    replay_paint.add_step(PaintStep((px+i,py+j), layer))
+                paint.add_step(PaintStep((px+i,py+j), layer))
         
+        self.action.repaint.clear()
         self.action.add_action(paint)
+        self.replay.add_action(replay_paint)
         
         
     def on_undo(self):
         """Called when an undo is requested."""
-        self.action.undo(self.grid)
+        layer_undone = self.action.undo(self.grid)
+        self.replay.add_action(layer_undone, True)
         
 
     def on_redo(self):
         """Called when a redo is requested."""
-        self.action.redo(self.grid)
+        layer_redone = self.action.redo(self.grid)
+        self.replay.add_action(layer_redone, False)
 
     def on_special(self):
         """Called when the special action is requested."""
         self.grid.special()
         self.action.add_action(PaintAction(is_special=True))
+        self.replay.add_action(PaintAction(is_special=True))
 
     def on_replay_start(self):
         """Called when the replay starting is requested."""
-        pass
+        # ended = False
+        # while ended == False:
+        #     ended = self.on_replay_next_step()
+            # print(ended)
+        
 
     def on_replay_next_step(self) -> bool:
         """
         Called when the next step of the replay is requested.
         Returns whether the replay is finished.
         """
-        return True
+        return self.replay.play_next_action(self.grid)
 
     def on_increase_brush_size(self):
         """Called when an increase to the brush size is requested."""
