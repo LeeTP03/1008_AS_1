@@ -7,7 +7,7 @@ from data_structures.bset import BSet
 from data_structures.array_sorted_list import ArraySortedList
 from data_structures.sorted_list_adt import *
 from layers import invert, rainbow, black, lighten, green, red, blue, sparkle, darken
-from layer_util import background
+from layer_util import *
 import colorsys
 
 class LayerStore(ABC):
@@ -160,7 +160,9 @@ class SequenceLayerStore(LayerStore):
     """
     def __init__(self) -> None:
         self.store = BSet()
-        self.layers = [rainbow, black, lighten, invert, red, green , blue , sparkle, darken]
+        self.layers = get_layers()
+        # self.layers = ArraySortedList(9)
+        # [self.layers.add(ListItem(layers[i], layers[i].index)) for i in range(9)]        
         self.spec = False
         self.color = None
     
