@@ -11,6 +11,8 @@ from layer_util import *
 import colorsys
 
 class LayerStore(ABC):
+    
+    NUMBER_OF_LAYERS = len(get_layers())
 
     def __init__(self) -> None:
         self.color = None
@@ -53,13 +55,11 @@ class SetLayerStore(LayerStore):
     - special: Invert the colour output.
     """
     def __init__(self) -> None:
-        self.color = None
         self.store = None
         self.spec = False
     
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
-        self.color = self.store
         if self.store == None:
             if self.spec == True:
                 return invert.apply(start,timestamp,x,y)
@@ -101,23 +101,15 @@ class AdditiveLayerStore(LayerStore):
     - special: Reverse the order of current layers (first becomes last, etc.)
     """
     def __init__(self) -> None:
-        self.color = None
         self.store = CircularQueue(100)
-        self.spec = False
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
-        if len(self.store) == 0:
-            return start
-        
-        color = start
-        temp = CircularQueue(100)
-        
+        color = start     
+           
         for i in range(len(self.store)):
             next_layer = self.store.serve()
-            temp.append(next_layer)
+            self.store.append(next_layer)
             color = next_layer.apply(color,timestamp,x,y)
-            self.color = next_layer
-        self.store = temp
         return color
         
     def add(self, layer):
@@ -146,8 +138,6 @@ class AdditiveLayerStore(LayerStore):
             
         self.store = q1
         
-            
-        
 
 class SequenceLayerStore(LayerStore):
     """
@@ -160,32 +150,27 @@ class SequenceLayerStore(LayerStore):
     """
     def __init__(self) -> None:
         self.store = BSet()
-        self.layers = get_layers()
-        # self.layers = ArraySortedList(9)
-        # [self.layers.add(ListItem(layers[i], layers[i].index)) for i in range(9)]        
-        self.spec = False
-        self.color = None
+        self.layers = get_layers()       
     
     def get_color(self, start, timestamp, x, y) -> tuple[int, int, int]:
         color = start
-        for i in range(1,9):
+        for i in range(1,self.NUMBER_OF_LAYERS):
             if i in self.store:
-                color = self.layers[i-1].apply(color, timestamp, x, y)
-                self.color = self.layers[i-1]      
+                color = self.layers[i-1].apply(color, timestamp, x, y)     
                     
         return color
     
     def add(self, layer):
-        layer_index = layer.index
-        self.store.add(layer_index+1)
+        layer_index = layer.index+1
+        self.store.add(layer_index)
         return True
         
         
     def erase(self,layer):
-        layer_index = layer.index
-        if (layer_index+1) not in self.store:
+        layer_index = layer.index+1
+        if (layer_index) not in self.store:
             return False
-        self.store.remove(layer_index+1)
+        self.store.remove(layer_index)
         return True
     
     def special(self):
@@ -194,7 +179,7 @@ class SequenceLayerStore(LayerStore):
             return False
         
         lst = ArraySortedList(9)
-        for i in range(1,9):
+        for i in range(1,self.NUMBER_OF_LAYERS):
             if i in self.store:
                 a = ListItem(self.layers[i-1],self.layers[i-1].name)
                 lst.add(a)

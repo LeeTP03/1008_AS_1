@@ -296,7 +296,9 @@ class MyWindow(arcade.Window):
 
     def on_reset(self):
         """Called when a window reset is requested."""
-        self.action = UndoTracker()
+        # self.action = UndoTracker()
+        # self.replay = ReplayTracker()
+        self.on_init()
 
     def on_paint(self, layer: Layer, px, py):
         """
@@ -306,45 +308,27 @@ class MyWindow(arcade.Window):
         layer: The layer being applied.
         px: x position of the brush.
         py: y position of the brush.
+        
+        
+        complexity = O(n^2)
         """
         
         paint = PaintAction()
         replay_paint = PaintAction()
         
         size = self.grid.brush_size
-                 
-        test = 0
-                
-        for i in range(size, 0, -1):
-            test+=1
-            for j in range(1-test, test):
-                if px-i < 0 or py+j >= self.grid.y or py+j < 0:
-                    continue
-                layer_change1 = self.grid[px-i][py+j].add(layer)
-                if layer_change1 == True:
-                    replay_paint.add_step(PaintStep((px-i,py+j), layer))
-                paint.add_step(PaintStep((px-i,py+j), layer))
-                
+        
+        for i in range(-size, size+1):
+            for j in range(-size, size+1):
+                if abs(i) + abs(j) <= size:
+                    x_coord = min(self.grid.x-1, abs(px+i))
+                    y_coord = min(self.grid.y-1, abs(py+j))
+                    
+                    layer_change = self.grid[x_coord][y_coord].add(layer)
+                    if layer_change == True:
+                        replay_paint.add_step(PaintStep((x_coord,y_coord),layer))
+                    paint.add_step(PaintStep((x_coord,y_coord),layer))
 
-        test += 1    
-        for i in range(1-test,test):
-            if py+i >= self.grid.y or py+i < 0: 
-                continue
-            layer_change2 = self.grid[px][py+i].add(layer)
-            if layer_change2 == True:
-                replay_paint.add_step(PaintStep((px,py+i), layer))
-            paint.add_step(PaintStep((px,py+i), layer))
-            
-            
-        for i in range(1,size+1):
-            test-=1
-            for j in range(1-test, test):
-                if px+i >= self.grid.x or py+j >= self.grid.y or py+j < 0:
-                    continue
-                layer_change3 = self.grid[px+i][py+j].add(layer)
-                if layer_change3 == True:
-                    replay_paint.add_step(PaintStep((px+i,py+j), layer))
-                paint.add_step(PaintStep((px+i,py+j), layer))
         
         self.action.repaint.clear()
         self.action.add_action(paint)
@@ -352,13 +336,19 @@ class MyWindow(arcade.Window):
         
         
     def on_undo(self):
-        """Called when an undo is requested."""
+        """Called when an undo is requested.
+        
+        complexity = O(n^2)
+        """
         layer_undone = self.action.undo(self.grid)
         self.replay.add_action(layer_undone, True)
         
 
     def on_redo(self):
-        """Called when a redo is requested."""
+        """Called when a redo is requested.
+        
+        complexity = O(n^2)
+        """
         layer_redone = self.action.redo(self.grid)
         self.replay.add_action(layer_redone, False)
 
@@ -370,10 +360,7 @@ class MyWindow(arcade.Window):
 
     def on_replay_start(self):
         """Called when the replay starting is requested."""
-        # ended = False
-        # while ended == False:
-        #     ended = self.on_replay_next_step()
-            # print(ended)
+        self.action = UndoTracker()
         
 
     def on_replay_next_step(self) -> bool:
